@@ -26,7 +26,7 @@ Run the tests with `uv run pytest` and open the notebooks with `uv run jupyter l
 
 ```
 data/        input data (font.h)
-docs/        assignment and report material (not tracked)
+docs/        assignment text
 notebooks/   experiments and figures
 src/tp5/     package code
 tests/       pytest tests
@@ -34,8 +34,10 @@ tests/       pytest tests
 
 ## Task division
 
-| Part | Topic | Members |
+| Deel | Wie | Inhoud |
 |---|---|---|
-| 1a | Autoencoder | |
-| 1b | Denoising autoencoder | |
-| 2 | VAE | |
+| Data & tools | Mika | font inladen, ruis, plots, error-metric |
+| 1a architectuur | 2 personen | autoencoder bouwen en tunen tot max 1 pixel fout |
+| 1a analyse | Mika | latente ruimte plotten, nieuwe letter genereren |
+| 1b | 1 persoon | denoising-architectuur en ruisexperimenten |
+| 2 | 2 personen | dataset kiezen, VAE bouwen, nieuw sample genereren |
