@@ -22,6 +22,17 @@ pip install -e ".[dev]"
 
 Run the tests with `uv run pytest` and open the notebooks with `uv run jupyter lab notebooks/`.
 
+## Notebooks
+
+| Notebook | Section |
+|---|---|
+| `00_data_check.ipynb` | Font loading, plots and noise |
+| `01_autoencoder_architecture.ipynb` | 1a.1–1a.2 Autoencoder architecture and optimisation study |
+
+The autoencoder (`src/tp5/autoencoder.py`) is written from scratch with numpy:
+dense layers, backpropagation with binary cross-entropy, and SGD, momentum and
+Adam optimizers.
+
 ## Structure
 
 ```
