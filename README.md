@@ -67,7 +67,7 @@ a noisy input with a clean target; `fit` currently trains on clean input only.
 | Data & tools | Mika | font loading, noise, plots, error metric | done |
 | 1a.1–1a.2 architecture | Mika | build the autoencoder and tune it to ≤ 1 wrong pixel | done (`01_autoencoder_architecture.ipynb`) |
 | 1a.3–1a.4 analysis | Mika | plot the latent space, generate a new letter | to do |
-| 1b | 1 person | denoising architecture and noise experiments | to do |
+| 1b | 1 person - Stella | denoising architecture and noise experiments | In progress se branch: feat/denoising |
 | 2 | 2 people | choose a dataset, build the VAE, generate a new sample | to do |
 
 ## Contributing
