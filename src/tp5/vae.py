@@ -16,7 +16,7 @@ from tp5.autoencoder import Autoencoder, ACTIVATIONS
 
 
 class VAE(Autoencoder):
-    """Variational autoencoder; see the module docstring for the layout.
+    """Variational autoencoder
 
     Args:
         n_inputs: Size of each input vector.
