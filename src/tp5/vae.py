@@ -7,8 +7,8 @@ Layer layout (L = self.latent_index):
     decoder  layers L+1 ..     z -> reconstruction (sigmoid output)
 
 Training samples z = mu + exp(0.5 * logvar) * eps with eps ~ N(0, I) and
-minimises  BCE summed over pixels + KL(N(mu, exp(logvar)) || N(0, I)),
-both averaged over the batch.
+minimises  BCE summed over pixels + beta * KL(N(mu, exp(logvar)) || N(0, I)),
+both averaged over the batch (beta = 1 by default).
 """
 
 import numpy as np
@@ -24,11 +24,16 @@ class VAE(Autoencoder):
             The decoder uses the same sizes in reverse order.
         latent_dim: Size of mu, logvar and z.
         seed: Seed for the weights and for the sampling noise eps.
+        beta: Weight of the KL term in the training loss (1.0 is the standard
+            VAE; smaller values favour sharper reconstructions).
         **kw: Passed on to Autoencoder (activation, latent_activation).
     """
 
-    def __init__(self, n_inputs: int, hidden: tuple, latent_dim: int, seed=None, **kw):
+    def __init__(
+        self, n_inputs: int, hidden: tuple, latent_dim: int, seed=None, beta=1.0, **kw
+    ):
         super().__init__(n_inputs, hidden, latent_dim, seed=seed, **kw)
+        self.beta = beta
         # separate generator for the logvar head weights, so they do not start
         # as a copy of the random numbers used by the parent
         head_rng = np.random.default_rng(None if seed is None else seed + 1)
@@ -64,7 +69,7 @@ class VAE(Autoencoder):
         return recon, kl
 
     def loss(self, X: np.ndarray, X_hat=None):
-        """Return recon + kl. Also appends both parts to recon_log / kl_log.
+        """Return recon + beta * kl. Also appends recon and kl to recon_log / kl_log.
 
         The inherited fit() calls this once per logged epoch, so the two logs
         line up with history["epoch"]. Use loss_parts() for any other call
@@ -73,7 +78,7 @@ class VAE(Autoencoder):
         recon, kl = self.loss_parts(X, X_hat)
         self.recon_log.append(recon)
         self.kl_log.append(kl)
-        return recon + kl
+        return recon + self.beta * kl
 
     def gradients(self, X_in, X_target=None):
         """Backpropagate recon + kl and return the gradients in params order.
@@ -106,9 +111,9 @@ class VAE(Autoencoder):
         dz = back  # after the last iteration the layer input is z
 
         # Gradient w.r.t. mu and logvar: path through z (reconstruction)
-        # plus the KL term (also divided by n for the batch mean)
-        dmu = dz + mu / n
-        dlogvar = dz * 0.5 * eps * std + 0.5 * (np.exp(logvar) - 1) / n
+        # plus the KL term (weighted by beta, divided by n for the batch mean)
+        dmu = dz + self.beta * mu / n
+        dlogvar = dz * 0.5 * eps * std + self.beta * 0.5 * (np.exp(logvar) - 1) / n
 
         # Heads
         gW[L] = h.T @ dmu
