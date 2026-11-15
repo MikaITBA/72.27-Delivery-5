@@ -22,6 +22,35 @@ pip install -e ".[dev]"
 
 Run the tests with `uv run pytest` and open the notebooks with `uv run jupyter lab notebooks/`.
 
+## Data
+
+Both datasets are already in the repository, so there is nothing to download
+or move before running the code.
+
+| File | Used in | Content | Load with |
+|---|---|---|---|
+| `data/font.h` | Exercise 1 | 32 characters of 7x5 pixels | `tp5.data.load_font()` |
+| `data/fish.npz` | Exercise 2 (VAE) | 2,000 hand-drawn fish of 28x28 pixels, black and white | `tp5.fish.load_fish()` |
+
+The fish are a fixed random subset of the "fish" category of Google's
+[Quick, Draw! dataset](https://quickdraw.withgoogle.com/data) (about 134,000
+drawings, licensed under
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)). The original
+files are listed on
+[GitHub](https://github.com/googlecreativelab/quickdraw-dataset); we use the
+"numpy bitmap" file
+([fish.npy](https://storage.googleapis.com/quickdraw_dataset/full/numpy_bitmap/fish.npy), 105 MB).
+
+To recreate `data/fish.npz` from scratch (normally not needed), run:
+
+```bash
+uv run python scripts/make_fish_dataset.py
+```
+
+The script downloads the full file to a temporary folder, picks the same 2,000
+drawings every time (fixed seed), turns the pixels into black and white and
+saves only the subset. The full 105 MB file is not kept.
+
 ## Notebooks
 
 | Notebook | Section |
@@ -36,9 +65,10 @@ Adam optimizers.
 ## Structure
 
 ```
-data/        input data (font.h)
-docs/        assignment text
+data/        input data (font.h, fish.npz)
+docs/        assignment text, decision log for exercise 2
 notebooks/   experiments and figures
+scripts/     one-off scripts (rebuilding the fish dataset)
 src/tp5/     package code
 tests/       pytest tests
 ```
