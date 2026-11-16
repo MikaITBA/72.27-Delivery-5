@@ -27,8 +27,13 @@ def show_progress(epoch, epochs, recon, kl, beta, seconds):
     )
 
 
-def train(vae, X, epochs, lr=1e-3, batch_size=64, seed=0, warmup_epochs=0, progress=True):
+def train(vae, X, epochs, lr=1e-3, batch_size=64, seed=0, warmup_epochs=0, progress=True,
+          X_val=None):
     """Train `vae` on X with Adam and return the history (epoch, recon, kl per epoch).
+
+    If X_val is given, the history also holds val_recon and val_kl after
+    every epoch (unweighted, from loss_parts), so overfitting becomes visible:
+    the training recon keeps falling while val_recon stops or rises.
 
     KL warm-up: during the first `warmup_epochs` epochs the KL weight beta
     grows in a straight line from 0 to the beta the VAE was created with.
@@ -43,7 +48,7 @@ def train(vae, X, epochs, lr=1e-3, batch_size=64, seed=0, warmup_epochs=0, progr
     """
     optimizer = OPTIMIZERS["adam"](lr=lr)
     target_beta = vae.beta
-    history = {"epoch": [], "recon": [], "kl": [], "beta": []}
+    history = {"epoch": [], "recon": [], "kl": [], "beta": [], "val_recon": [], "val_kl": []}
     start = time.time()
     for epoch in range(1, epochs + 1):
         if warmup_epochs > 0:
@@ -55,6 +60,10 @@ def train(vae, X, epochs, lr=1e-3, batch_size=64, seed=0, warmup_epochs=0, progr
         history["recon"].append(recon)
         history["kl"].append(kl)
         history["beta"].append(vae.beta)
+        if X_val is not None:
+            val_recon, val_kl = vae.loss_parts(X_val)  # loss_parts does not touch the logs
+            history["val_recon"].append(float(val_recon))
+            history["val_kl"].append(float(val_kl))
         if progress:
             show_progress(epoch, epochs, recon, kl, vae.beta, time.time() - start)
     vae.beta = target_beta
