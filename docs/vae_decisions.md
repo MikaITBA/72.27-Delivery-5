@@ -86,3 +86,74 @@ what we gave up. This is the source material for the presentation.
   one line and keeps the strokes sharp.
 - **Trade-off:** The soft anti-aliased edges of the strokes are lost, and 784
   inputs make the network bigger and slower than 16×16 images would.
+
+---
+
+# Experiment (branch `exp/vae-cartoon-colour`): colour cartoon faces
+
+## D6. Look for a more consistent dataset than the fish
+
+- **Problem:** Fish face both left and right, and some drawings contain two
+  fish or are scribbles. The latent space mixes these, and many generated
+  samples come out as noise.
+- **Tried first:** Other Quick, Draw! categories (apple, cup, mushroom, light
+  bulb, house, umbrella; `scripts/compare_quickdraw_categories.py`). Umbrella
+  and mushroom looked the most consistent.
+- **Experiment:** Google's Cartoon Set (cartoon faces drawn by a program from
+  18 attributes; CC BY 4.0). Every face is centred, the same size and looks
+  straight ahead, so the data is perfectly "stable". Google's own download no
+  longer allows anonymous access, so we use the identical copy on Hugging Face.
+- **Open question:** The team was told not to use emojis. Cartoon avatar faces
+  are not emojis, but they are close, so this must be checked with the teacher.
+
+## D7. Colour 32×32, 2,000 faces, cropped border
+
+- **Chosen:** `scripts/make_cartoon_dataset.py` crops the empty border (every
+  face lies inside the same 453×453 square), shrinks to 32×32 and keeps the
+  colour: 32 × 32 × 3 = 3,072 inputs. 2,000 faces with seed 0, like the fish.
+  The 18 attributes of each face are stored as well.
+- **Alternatives:** Black and white at 28×28 (the faces disappear: only eyes
+  and glasses survive, because the drawings are coloured areas, not pen
+  strokes); grey 28×28 or 32×32 (recognisable, but loses hair and skin colour).
+- **Why:** Colour is what makes the faces recognisable. The VAE needs no code
+  change: the cross-entropy works with any value between 0 and 1.
+- **Trade-off:** About 4× more inputs than the fish, so training is about 4×
+  slower (≈0.25 s per epoch). The loss numbers are summed over 3,072 values and
+  cannot be compared with the fish.
+
+## D8. Feed the network "ink" (0 = paper), not red/green/blue
+
+- **Problem:** On red/green/blue values the VAE collapsed: validation recon
+  805, KL ≈ 1, no active latent unit. Every face was decoded as the same
+  average face. Even with beta = 0 (no KL at all) training sat on that plateau
+  for 13 epochs, so the cause was the input, not the KL term.
+- **Chosen:** `load_cartoons()` returns 1 − RGB, the amount of cyan, magenta
+  and yellow ink, as a printer does. White background becomes 0, the same
+  convention as the fish (0 = paper, 1 = pen). `show_images` converts back.
+- **Results** (60 epochs, 256-64, 2D latent, one seed):
+
+  | input | activation | val recon | KL | active units |
+  |---|---|---|---|---|
+  | RGB | tanh | 805.5 | 1.3 | 0 |
+  | RGB | relu | 703.4 | 6.2 | 2 |
+  | ink | tanh | 649.8 | 7.0 | 2 |
+  | ink | tanh + KL warm-up | 648.3 | 7.1 | 2 |
+  | ink | relu | 640.7 | 7.1 | 2 |
+
+- **Why:** With a white background 60% of the 3,072 inputs are a constant 1,
+  which drowns the small differences between faces in the first layer. As ink,
+  only the face itself feeds the network.
+- **Trade-off:** One extra conversion when plotting. KL warm-up turned out not
+  to be needed once the input was fixed.
+
+## D9. Train one epoch at a time (progress bar, optional KL warm-up)
+
+- **Chosen:** `src/tp5/vae_training.py` calls the inherited `fit()` for one
+  epoch at a time with the same Adam optimizer, prints a progress bar with the
+  current recon and KL, and can raise beta from 0 to 1 over the first epochs
+  (KL warm-up).
+- **Why:** Training on 3,072 inputs takes minutes, and we want to see that it
+  is moving. `fit()` lives in the teammates' `autoencoder.py`, which we do not
+  change (D2), so we wrap it instead.
+- **Trade-off:** `fit()` computes the loss on the whole training set after
+  every epoch, which costs about one extra forward pass per epoch.
