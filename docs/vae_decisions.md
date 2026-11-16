@@ -157,3 +157,40 @@ what we gave up. This is the source material for the presentation.
   change (D2), so we wrap it instead.
 - **Trade-off:** `fit()` computes the loss on the whole training set after
   every epoch, which costs about one extra forward pass per epoch.
+
+## D10. Has training matured? Epochs vs. more data vs. a larger latent space
+
+- **Question:** With 2,000 faces, latent 2 and 150 epochs (validation recon
+  627), would more epochs or more data give better faces?
+- **Experiment:** All 10,000 faces processed the same way, the same 500
+  held-out faces for every run, validation loss recorded after every epoch
+  (`train(..., X_val=...)`). ReLU, 256-64, one seed (reruns give identical
+  numbers).
+
+  | run | epoch 50 | epoch 100 | epoch 150 | epoch 300 |
+  |---|---|---|---|---|
+  | 1,500 faces, latent 2 | 654.5 | 636.2 | 631.4 | 624.0 |
+  | 4,500 faces, latent 2 | 629.3 | 615.3 | 609.2 | – |
+  | 9,500 faces, latent 2 | 611.5 | 599.3 | – | – |
+  | 1,500 faces, latent 8 | 585.2 | 576.7 | 574.2 | 570.1 |
+
+  (validation recon + KL, averaged over 5 epochs; lower is better)
+- **Findings:**
+  - *Epochs:* mostly matured. 150 → 300 epochs gains only 631 → 624 for
+    twice the time; no overfitting (the best epoch was 292 of 300).
+  - *More data:* a real gain, not only from more training steps. At the same
+    total amount of training (450,000 face-passes) 9,500 faces reach 612 vs.
+    624 for 1,500. The train/validation gap shrinks from 18 to under 1.
+    Pictures: hair colours come out right more often, and the edges of the
+    latent space decode to clean faces instead of noise.
+  - *Latent size:* the biggest gain. Latent 8 with only 1,500 faces (570)
+    beats latent 2 with 9,500 (599). Its reconstructions keep beards, hair
+    styles and sunglasses, and its generated faces are far more varied. Two
+    numbers per face are the real bottleneck: with latent 2 every face is
+    the same "generic face" recoloured.
+- **Next (not done yet):** use all 10,000 faces; a latent 2 model for the
+  latent-space plots and a latent 8 model for generating new faces (2c), as
+  in notebook 03 for the fish.
+- **Trade-off:** 10,000 faces make training about 5× slower per epoch and
+  the data file about 12 MB instead of 2.4 MB. A latent 8 space can no
+  longer be plotted directly.
