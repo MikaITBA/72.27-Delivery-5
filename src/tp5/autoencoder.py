@@ -5,7 +5,9 @@ code splits it into an encoder and a decoder. Training uses backpropagation
 with a choice of optimizer (SGD, momentum or Adam).
 """
 
+
 import numpy as np
+from tp5.data import add_noise
 
 # ------------------------------------------------------------------
 # Activations: (function, derivative expressed in terms of the output)
@@ -178,6 +180,7 @@ class Autoencoder:
         log_every=100,
         stop_at_pixels=None,
         seed=None,
+        noise_level=0.0,
     ):
         """Train on X and return a history dict.
 
@@ -188,8 +191,10 @@ class Autoencoder:
             batch_size: Mini-batch size; None means full batch.
             log_every: Record loss and pixel errors every this many epochs.
             stop_at_pixels: Stop early once every pattern has at most this
-                many wrong pixels.
+            many wrong pixels.
             seed: Seed for shuffling.
+            noise_level: Probability of flipping each input pixel during training.
+            Targets remain clean. Zero disables corruption.
 
         Returns:
             Dict with lists "epoch", "loss" and "max_pixel_error".
@@ -202,8 +207,9 @@ class Autoencoder:
         for epoch in range(1, epochs + 1):
             order = rng.permutation(n)
             for start in range(0, n, batch_size):
-                batch = X[order[start : start + batch_size]]
-                optimizer.step(self.params, self.gradients(batch, batch))
+                clean_batch = X[order[start : start + batch_size]]
+                noisy_batch = add_noise(clean_batch, noise_level, rng=rng)
+                optimizer.step(self.params, self.gradients(noisy_batch, clean_batch))
             if epoch % log_every == 0 or epoch == epochs:
                 X_hat = self.reconstruct(X)
                 max_err = int(np.max(np.sum(np.round(X_hat) != X, axis=1)))
